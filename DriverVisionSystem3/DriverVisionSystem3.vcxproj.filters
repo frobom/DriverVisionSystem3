@@ -36,6 +36,9 @@
     <ClInclude Include="RoadSignDetector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DetectedResult.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -56,5 +59,24 @@
     <ClCompile Include="RoadSignDetector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DetectedResult.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="classifiers\stopsign_cascade0408.xml" />
+    <Xml Include="classifiers\stopsigncascade.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="images\dory01.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\stopSign2.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="videos\How to Pass Your Driving Exam - YouTube.MP4" />
+    <Media Include="videos\Learn to drive with Rico Williams.MP4" />
   </ItemGroup>
 </Project>

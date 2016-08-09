@@ -59,7 +59,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		//DetectedResult::detectedStopSign = RoadSignDetector::detectStopSign(frame);
 		//vector<Rect> stopSign = DetectedResult::detectedStopSign;
 		vector<Rect> stopSign = RoadSignDetector::detectStopSign(frame);
-		DetectedResult::detectedStopSign = stopSign;
+		DetectedResult::detectedStopSigns = stopSign;
 		for (int i = 0; i < stopSign.size(); i++) {
 			Point pt1(stopSign[i].x, stopSign[i].y);
 			Point pt2(stopSign[i].x + stopSign[i].width,

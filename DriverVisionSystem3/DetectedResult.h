@@ -13,8 +13,8 @@ namespace detection {
 			DetectedResult();
 			~DetectedResult();
 			static vector<Vec4i> detectedLines;
-			static vector<Rect> detectedStopSign;
-			static vector<Rect> detectedBackView;
+			static vector<Rect> detectedStopSigns;
+			static vector<Rect> detectedCarBackViews;
 
 	};
 
