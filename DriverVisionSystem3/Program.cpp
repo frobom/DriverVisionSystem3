@@ -7,23 +7,41 @@
 #include "RoadSignDetector.h"
 #include "DetectedResult.h"
 #include "opencv2/imgproc.hpp"
+#include "CarDetector.h"
+#include "TrafficLaneDetector.h"
+#include "SideWallDetector.h"
 
 using namespace std;
 using namespace cv;
 using namespace detection;
 
-int _tmain(int argc, _TCHAR* argv[])
+void drawRectangle(vector<Rect>, Mat);
+void drawCircle(vector<Rect>, Mat);
+void drawLine(vector<Vec4i>, Mat);
+
+const int noOfPoints = 4;
+Point rook_points[1][noOfPoints];
+Point old_rook_points[1][noOfPoints];
+const Point* ppt[1] = { rook_points[0] };
+int npt[] = { noOfPoints };
+
+//int _tmain(int argc, _TCHAR* argv[])
+int main(int argc, char* argv[])
 {
-	/*Mat image;
-	image = imread("images\\stopSign2.jpg", 1);
-	if (!image.data)
-	{
-		printf("No image data \n");
+	if (argc != 3) {
+		cout << "Invalid Arguments. There must be 2 arguments." << endl;
+		system("PAUSE");
 		return -1;
+	}
+	VideoCapture cap;
 
-	}*/	
+	if (string(argv[1]) == "-v") {
+		cap = VideoCapture(argv[2]);
+	}
 
-	VideoCapture cap("videos\\Learn to drive with Rico Williams.MP4"); // open the video file for reading
+	if (string(argv[1]) == "-c") {
+		cap = VideoCapture(0);
+	}
 
 	if (!cap.isOpened())  // if not success, exit program
 	{
@@ -38,7 +56,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	namedWindow("MyVideo", CV_WINDOW_AUTOSIZE); //create a window called "MyVideo"
 
 	double frameCount = cap.get(CAP_PROP_FRAME_COUNT);
-	double currentFrame = cap.get(CV_CAP_PROP_POS_FRAMES);
 
 	cout << "Frame Count : " << frameCount;
 
@@ -47,8 +64,6 @@ int _tmain(int argc, _TCHAR* argv[])
 		Mat frame;
 
 		bool bSuccess = cap.read(frame); // read a new frame from video
-		currentFrame = cap.get(CV_CAP_PROP_POS_FRAMES);
-		cout << "Current Frame : " << currentFrame;
 
 		if (!bSuccess) //if not success, break loop
 		{
@@ -56,37 +71,98 @@ int _tmain(int argc, _TCHAR* argv[])
 			break;
 		}
 
-		//DetectedResult::detectedStopSign = RoadSignDetector::detectStopSign(frame);
-		//vector<Rect> stopSign = DetectedResult::detectedStopSign;
-		vector<Rect> stopSign = RoadSignDetector::detectStopSign(frame);
-		DetectedResult::detectedStopSigns = stopSign;
-		for (int i = 0; i < stopSign.size(); i++) {
-			Point pt1(stopSign[i].x, stopSign[i].y);
-			Point pt2(stopSign[i].x + stopSign[i].width,
-				stopSign[i].y + stopSign[i].height);
+		double currentFrame = cap.get(CV_CAP_PROP_POS_FRAMES);
+		cout << "Current Frame : " << currentFrame;
 
-			// Draw a rectangle around the detected stop sign
-			rectangle(frame, pt1, pt2, Scalar(0, 255, 0), 2);
-			/*Point pt(stopSign[i].x, stopSign[i].y);
-			rectangle(image, pt1, pt2, Scalar(0, 255, 0), CV_FILLED);*/
-			putText(frame, "Stop Sign", pt1, FONT_HERSHEY_PLAIN, 1.3,
-				Scalar(255, 0, 0), 2);
+		try {
+			
+			DetectedResult::detectedStopSigns = RoadSignDetector::detectStopSign(frame);
+			DetectedResult::detectedLines = TrafficLaneDetector::lineDetector(frame);
+			DetectedResult::detectedCarBackViews = CarDetector::detectBackView(frame);
+			
+			//vector<Point> sideWallPoints = detection::SideWallDetector::detectSideWall(frame, true);
+
+			drawCircle(DetectedResult::detectedStopSigns, frame);
+			drawRectangle(DetectedResult::detectedCarBackViews, frame);
+			drawLine(DetectedResult::detectedLines, frame);
+
+			//drawPloygon(sideWallPoints, frame);
+
+			imshow("MyVideo", frame); //show the frame in "MyVideo" window
+
+			if (waitKey(1) == 27) //wait for 'esc' key press for 30 ms. If 'esc' key is pressed, break loop
+			{
+				cout << "esc key is pressed by user" << endl;
+				break;
+			}
 		}
-
-		imshow("MyVideo", frame); //show the frame in "MyVideo" window
-
-		if (waitKey(1) == 27) //wait for 'esc' key press for 30 ms. If 'esc' key is pressed, break loop
-		{
-			cout << "esc key is pressed by user" << endl;
+		catch (ClassifierException &ce) {
+			cerr << ce.what() << endl;
+			system("PAUSE");
 			break;
 		}
+
 	}
 	VideoCapture();
 
-	/*namedWindow("Display Image", WINDOW_AUTOSIZE);
-	imshow("Display Image", image);*/
-	//waitKey(0);
-
 	return 0;
 }
+
+void loadClassifiers() {
+	printf("stop sign classifier loading.....\n");
+	RoadSignDetector::stopSignDetector.load("E:\\Java\\DriverVisionSystem3\\DriverVisionSystem3\\classifiers\\stopsign_cascade0408.xml");
+
+	if (RoadSignDetector::stopSignDetector.empty()) {
+		throw ClassifierException();
+	}
+}
+
+void drawRectangle(vector<Rect> resultVector, Mat frame) {
+	for (int i = 0; i < resultVector.size(); i++) {
+		Point pt1(resultVector[i].x, resultVector[i].y);
+		Point pt2(resultVector[i].x + resultVector[i].width,
+			resultVector[i].y + resultVector[i].height);
+
+		// Draw a rectangle around the detected stop sign
+		rectangle(frame, pt1, pt2, Scalar(255, 255, 255), 2);
+	}
+}
+
+void drawCircle(vector<Rect> resultVector, Mat frame) {
+	for (int i = 0; i < resultVector.size(); i++) {
+		Point center((resultVector[i].x + resultVector[i].width) / 2, (resultVector[i].y + resultVector[i].height) / 2);
+
+		// Draw a circle 
+		circle(frame, center, 30, Scalar(0, 0, 255), 1, 8);
+	}
+}
+
+void drawLine(vector<Vec4i> lines, Mat frame) {
+	for (int i = 0; i < lines.size(); i++) {
+		Vec4i l = lines[i];
+		// Draw a line 
+		line(frame, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255, 220, 0), 2, 8);
+	}
+}
+
+void drawPloygon(vector<Point> points, Mat frame) {
+	// draw wall
+	Mat wall(frame.rows, frame.cols, CV_8UC3, Scalar(0, 0, 0));
+	Mat dst(frame.rows, frame.cols, CV_8UC3);
+
+	if (points.size() == 4) {
+
+		for (int i = 0; i < noOfPoints; i++) {
+			rook_points[0][i] = points.at(i);
+		}
+
+		fillPoly(wall, ppt, npt, 1, Scalar(0, 0, 255), 8);
+	}
+
+	// end draw wall
+
+	addWeighted(frame, 0.8, wall, (1 - 0.5), 0.0, dst);
+}
+
+
 
